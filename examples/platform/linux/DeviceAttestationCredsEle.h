@@ -1,7 +1,6 @@
 /*
- *    Copyright 2023 NXP
- *
  *    Copyright (c) 2021 Project CHIP Authors
+ *    Copyright 2023, 2025 NXP
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,19 +16,19 @@
  */
 #pragma once
 
+#include "hsm_api.h"
 #include <credentials/DeviceAttestationCredsProvider.h>
-#include <trusty_matter.h>
-
-using namespace matter;
 
 namespace chip {
 namespace Credentials {
-namespace Trusty {
+namespace ele {
 
-class TrustyDACProvider : public DeviceAttestationCredentialsProvider
+class EleDACProvider : public DeviceAttestationCredentialsProvider
 {
 public:
-    static TrustyDACProvider & GetTrustyDACProvider();
+    EleDACProvider();
+    ~EleDACProvider();
+    static EleDACProvider & GetEleDACProvider();
 
     CHIP_ERROR GetCertificationDeclaration(MutableByteSpan & out_cd_buffer) override;
     CHIP_ERROR GetFirmwareInformation(MutableByteSpan & out_firmware_info_buffer) override;
@@ -38,9 +37,10 @@ public:
     CHIP_ERROR SignWithDeviceAttestationKey(const ByteSpan & message_to_sign, MutableByteSpan & out_signature_buffer) override;
 
 private:
-    TrustyMatter trusty_matter;
+    hsm_hdl_t hsm_session_hdl = 0;
+    hsm_hdl_t key_store_hdl   = 0;
 };
 
-} // namespace Trusty
+} // namespace ele
 } // namespace Credentials
 } // namespace chip
