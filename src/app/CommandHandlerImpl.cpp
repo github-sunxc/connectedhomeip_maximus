@@ -34,6 +34,7 @@
 #include <platform/LockTracker.h>
 #include <protocols/interaction_model/StatusCode.h>
 #include <protocols/secure_channel/Constants.h>
+#include <transport/raw/GroupcastTesting.h>
 
 namespace chip {
 namespace app {
@@ -323,8 +324,7 @@ Status CommandHandlerImpl::ProcessInvokeRequest(System::PacketBufferHandle && pa
 
 void CommandHandlerImpl::Close()
 {
-    mSuppressResponse = false;
-    mpResponder       = nullptr;
+    mpResponder = nullptr;
     MoveToState(State::AwaitingDestruction);
 
     // We must finish all async work before we can shut down a CommandHandlerImpl. The actual CommandHandlerImpl MUST finish their
@@ -426,10 +426,8 @@ Status CommandHandlerImpl::ProcessCommandDataIB(CommandDataIB::Parser & aCommand
 
     {
         Access::SubjectDescriptor subjectDescriptor = GetSubjectDescriptor();
-        DataModel::InvokeRequest request;
+        DataModel::InvokeRequest request(concretePath, subjectDescriptor);
 
-        request.path              = concretePath;
-        request.subjectDescriptor = &subjectDescriptor;
         request.invokeFlags.Set(DataModel::InvokeFlags::kTimed, IsTimedInvoke());
 
         Status preCheckStatus = mpCallback->ValidateCommandCanBeDispatched(request);
@@ -527,13 +525,20 @@ Status CommandHandlerImpl::ProcessGroupCommandDataIB(CommandDataIB::Parser & aCo
                       mapping.endpoint_id, ChipLogValueMEI(clusterId), ChipLogValueMEI(commandId));
 
         const ConcreteCommandPath concretePath(mapping.endpoint_id, clusterId, commandId);
+        // Groupcast Testing
+        auto & testing = Groupcast::GetTesting();
+        if (testing.IsEnabled() && testing.IsFabricUnderTest(fabric))
+        {
+            testing.SetGroupID(groupId);
+            testing.SetEndpointID(mapping.endpoint_id);
+            testing.SetClusterID(clusterId);
+            testing.SetElementID(static_cast<uint32_t>(commandId));
+        }
 
         {
             Access::SubjectDescriptor subjectDescriptor = GetSubjectDescriptor();
-            DataModel::InvokeRequest request;
+            DataModel::InvokeRequest request(concretePath, subjectDescriptor);
 
-            request.path              = concretePath;
-            request.subjectDescriptor = &subjectDescriptor;
             request.invokeFlags.Set(DataModel::InvokeFlags::kTimed, IsTimedInvoke());
 
             Status preCheckStatus = mpCallback->ValidateCommandCanBeDispatched(request);

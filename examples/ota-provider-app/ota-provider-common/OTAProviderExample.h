@@ -24,6 +24,9 @@
 #include <app/clusters/ota-provider/ota-provider-delegate.h>
 #include <lib/core/OTAImageHeader.h>
 #include <ota-provider-common/BdxOtaSender.h>
+
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 /**
@@ -47,7 +50,7 @@ public:
 
     size_t kProtocolsSupportedCount = 0;
 
-    typedef struct DeviceSoftwareVersionModel
+    struct DeviceSoftwareVersionModel
     {
         chip::VendorId vendorId;
         uint16_t productId;
@@ -58,7 +61,8 @@ public:
         uint32_t minApplicableSoftwareVersion;
         uint32_t maxApplicableSoftwareVersion;
         char otaURL[kOtaUrlMaxLen];
-    } DeviceSoftwareVersionModel;
+        std::string otaFileDesignator;
+    };
 
     //////////// OTAProviderDelegate Implementation ///////////////
     void HandleQueryImage(
@@ -100,12 +104,23 @@ public:
     uint16_t GetProductId() const { return mProductId; }
     uint16_t GetHardwareVersion() const { return mHardwareVersion; }
     uint32_t GetSoftwareVersion() const { return mRequestorSoftwareVersion; }
+    // Variables used for named pipes
+    bool GetApplyRequestSentStatus() const { return mApplyUpdateRequestSent; }
+    chip::app::Clusters::OtaSoftwareUpdateProvider::OTAApplyUpdateAction GetApplyRequestActionStatus() const
+    {
+        return mApplyUpdateRequestActionSent;
+    }
+    uint32_t GetApplyRequestDelayStatus() const { return mApplyUpdateRequestDelaySent; }
+    uint16_t GetApplyRequestCount() const { return mApplyUpdateRequestCount; }
+    // End of variables used for named pipes
     chip::Span<const DownloadProtocolEnum> GetProtocolsSupported() const
     {
         return chip::Span<const DownloadProtocolEnum>(mProtocolsSupported);
     }
     bool GetRequestorCanConsent() const { return mRequestorCanConsent; }
     const char * GetLocation() const { return mLocation; }
+
+    const char * GetFilePathForDesignator(const char * designator) const;
 
 private:
     bool SelectOTACandidate(const uint16_t requestorVendorID, const uint16_t requestorProductID,
@@ -128,10 +143,14 @@ private:
     void
     SaveCommandSnapshot(const chip::app::Clusters::OtaSoftwareUpdateProvider::Commands::QueryImage::DecodableType & commandData);
 
+    std::string MapFileToDesignator(const std::string & filePath);
+
     BdxOtaSender mBdxOtaSender;
     std::vector<DeviceSoftwareVersionModel> mCandidates;
-    char mOTAFilePath[kFilepathBufLen]; // null-terminated
+    std::unordered_map<std::string, std::string> mFileDesignatorMap;
+    std::string mSelectedFileDesignator;
     char mImageUri[kUriMaxLen];
+    bool mImageUriIsSupplied = false;
     OTAQueryStatus mQueryImageStatus;
     OTAApplyUpdateAction mUpdateAction;
     uint32_t mIgnoreQueryImageCount;
@@ -151,4 +170,8 @@ private:
     DownloadProtocolEnum mProtocolsSupported[kMaxProtocolsSupported];
     bool mRequestorCanConsent;
     char mLocation[kMaxLocation] = { 0, 0, 0 };
+    bool mApplyUpdateRequestSent = false;
+    OTAApplyUpdateAction mApplyUpdateRequestActionSent;
+    uint32_t mApplyUpdateRequestDelaySent;
+    u_int16_t mApplyUpdateRequestCount = 0;
 };

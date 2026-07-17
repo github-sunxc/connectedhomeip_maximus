@@ -13,6 +13,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+#include <lib/support/tests/ExtraPwTestMacros.h>
 #include <pw_unit_test/framework.h>
 
 #include <app/clusters/software-diagnostics-server/SoftwareDiagnosticsCluster.h>
@@ -201,27 +202,27 @@ TEST_F(TestSoftwareDiagnosticsCluster, AttributesAndCommandTest)
 
         // Test all attributes
         // cluster revision
-        Attributes::ClusterRevision::TypeInfo::DecodableType clusterRevision;
+        Attributes::ClusterRevision::TypeInfo::DecodableType clusterRevision{};
         ASSERT_TRUE(tester.ReadAttribute(Attributes::ClusterRevision::Id, clusterRevision).IsSuccess());
         EXPECT_EQ(clusterRevision, SoftwareDiagnostics::kRevision);
 
         // feature map
-        Attributes::FeatureMap::TypeInfo::DecodableType featureMap;
+        Attributes::FeatureMap::TypeInfo::DecodableType featureMap{};
         ASSERT_TRUE(tester.ReadAttribute(Attributes::FeatureMap::Id, featureMap).IsSuccess());
         EXPECT_EQ(featureMap, BitFlags<SoftwareDiagnostics::Feature>{ SoftwareDiagnostics::Feature::kWatermarks }.Raw());
 
         // heapfree
-        Attributes::CurrentHeapFree::TypeInfo::DecodableType heapFree;
+        Attributes::CurrentHeapFree::TypeInfo::DecodableType heapFree{};
         ASSERT_TRUE(tester.ReadAttribute(Attributes::CurrentHeapFree::Id, heapFree).IsSuccess());
         EXPECT_EQ(heapFree, 123u);
 
         // heapused
-        Attributes::CurrentHeapUsed::TypeInfo::DecodableType heapUsed;
+        Attributes::CurrentHeapUsed::TypeInfo::DecodableType heapUsed{};
         ASSERT_TRUE(tester.ReadAttribute(Attributes::CurrentHeapUsed::Id, heapUsed).IsSuccess());
         EXPECT_EQ(heapUsed, 234u);
 
         // highwatermark
-        Attributes::CurrentHeapHighWatermark::TypeInfo::DecodableType highWatermark;
+        Attributes::CurrentHeapHighWatermark::TypeInfo::DecodableType highWatermark{};
         ASSERT_TRUE(tester.ReadAttribute(Attributes::CurrentHeapHighWatermark::Id, highWatermark).IsSuccess());
         EXPECT_EQ(highWatermark, 456u);
 
@@ -274,7 +275,7 @@ TEST_F(TestSoftwareDiagnosticsCluster, TestEventGeneration)
     Events::SoftwareFault::DecodableType decodedFault;
     auto event = tester.GetNextGeneratedEvent();
     ASSERT_TRUE(event.has_value());
-    ASSERT_EQ(event->GetEventData(decodedFault), CHIP_NO_ERROR); // NOLINT(bugprone-unchecked-optional-access)
+    ASSERT_EQ(event->GetEventData(decodedFault), CHIP_NO_ERROR);
 
     EXPECT_EQ(decodedFault.id, fault.id);
     ASSERT_TRUE(decodedFault.name.HasValue());
